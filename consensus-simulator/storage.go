@@ -1,27 +1,31 @@
 package main
 
 type Storage struct {
-	memory     map[string]string
-	finishChan chan struct{}
-	saveChan   chan struct {
-		key   string
-		value string
-	}
+	memory           map[string]StorageData
+	finishChan       chan struct{}
+	saveChan         chan StorageSaveStruct
 	getIncomingChan  chan string
-	getOutcomingChan chan string
+	getOutcomingChan chan StorageData
 	deleteChan       chan string
+}
+
+type StorageData struct {
+	Message  string
+	Metadata map[string]interface{}
+}
+
+type StorageSaveStruct struct {
+	Key   string
+	Value StorageData
 }
 
 func NewStorage() *Storage {
 	s := &Storage{
-		memory:     make(map[string]string),
-		finishChan: make(chan struct{}, 1),
-		saveChan: make(chan struct {
-			key   string
-			value string
-		}, 1),
+		memory:           make(map[string]StorageData),
+		finishChan:       make(chan struct{}, 1),
+		saveChan:         make(chan StorageSaveStruct, 1),
 		getIncomingChan:  make(chan string, 1),
-		getOutcomingChan: make(chan string, 1),
+		getOutcomingChan: make(chan StorageData, 1),
 		deleteChan:       make(chan string, 1),
 	}
 	go s.start()
@@ -34,7 +38,7 @@ func (s *Storage) start() {
 		case <-s.finishChan:
 			return
 		case toSave := <-s.saveChan:
-			s.memory[toSave.key] = toSave.value
+			s.memory[toSave.Key] = toSave.Value
 		case key := <-s.getIncomingChan:
 			s.getOutcomingChan <- s.memory[key]
 		case key := <-s.deleteChan:
@@ -44,17 +48,11 @@ func (s *Storage) start() {
 	}
 }
 
-func (s *Storage) Save(key, value string) {
-	s.saveChan <- struct {
-		key   string
-		value string
-	}{
-		key:   key,
-		value: value,
-	}
+func (s *Storage) Save(sss StorageSaveStruct) {
+	s.saveChan <- sss
 }
 
-func (s *Storage) Get(key string) string {
+func (s *Storage) Get(key string) StorageData {
 	s.getIncomingChan <- key
 	return <-s.getOutcomingChan
 }
