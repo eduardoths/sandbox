@@ -9,6 +9,7 @@ type Storage struct {
 	}
 	getIncomingChan  chan string
 	getOutcomingChan chan string
+	deleteChan       chan string
 }
 
 func NewStorage() *Storage {
@@ -21,6 +22,7 @@ func NewStorage() *Storage {
 		}, 1),
 		getIncomingChan:  make(chan string, 1),
 		getOutcomingChan: make(chan string, 1),
+		deleteChan:       make(chan string, 1),
 	}
 	go s.start()
 	return s
@@ -35,6 +37,8 @@ func (s *Storage) start() {
 			s.memory[toSave.key] = toSave.value
 		case key := <-s.getIncomingChan:
 			s.getOutcomingChan <- s.memory[key]
+		case key := <-s.deleteChan:
+			delete(s.memory, key)
 		default:
 		}
 	}
@@ -53,6 +57,10 @@ func (s *Storage) Save(key, value string) {
 func (s *Storage) Get(key string) string {
 	s.getIncomingChan <- key
 	return <-s.getOutcomingChan
+}
+
+func (s *Storage) Delete(key string) {
+	s.deleteChan <- key
 }
 
 func (s *Storage) Shutdown() {
