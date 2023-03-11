@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	TX_ID_METADATA = "COMMITTED_AT"
+	TX_ID_METADATA = "TRANSACTION_ID"
 	LEADER_URL     = "LEADER_URL"
 	APP_JSON       = "application/json"
 )
@@ -34,36 +34,7 @@ func NewFollower() Follower {
 	return follower
 }
 
-func (f Follower) ServeHTTP(port string) error {
-	return f.app.Listen(port)
-}
-
-func (f Follower) handleGet(c *fiber.Ctx) error {
-	key := c.Params("key")
-	val, err := f.get(c.UserContext(), key)
-	if err != nil {
-		return c.SendStatus(http.StatusInternalServerError)
-	}
-	return c.SendString(val)
-}
-
-func (f Follower) handleExternalSave(c *fiber.Ctx) error {
-	var body SaveRequest
-
-	if err := c.BodyParser(&body); err != nil {
-		return c.Status(http.StatusUnprocessableEntity).JSON(Response{
-			Error: []ErrorResponse{
-				{Message: "Couldn't parse body"},
-			},
-		})
-	}
-
-	f.ExternalSave(body.Key, body.Value)
-
-	return c.SendStatus(http.StatusNoContent)
-}
-
-func (f Follower) ExternalSave(key, value string) error {
+func (f Follower) externalSave(key, value string) error {
 	leaderURL := os.Getenv(LEADER_URL)
 	body := SaveRequest{
 		Key:   key,
@@ -78,7 +49,7 @@ func (f Follower) ExternalSave(key, value string) error {
 	return err
 }
 
-func (f Follower) get(ctx context.Context, key string) (string, error) {
+func (f Follower) Get(ctx context.Context, key string) (string, error) {
 	data := f.kvStorage.Get(key)
 	icommitID, ok := data.Metadata[TX_ID_METADATA]
 	if !ok {
@@ -95,4 +66,59 @@ func (f Follower) get(ctx context.Context, key string) (string, error) {
 		return "", NotFound{}
 	}
 	return data.Message, nil
+}
+
+func (f Follower) save(ctx context.Context, key, value string) error {
+	transactionID := TransactionIDFromCtx(ctx)
+	f.kvStorage.Save(StorageSaveStruct{
+		Key: key,
+		Value: StorageData{
+			Message: value,
+			Metadata: map[string]interface{}{
+				TX_ID_METADATA: transactionID,
+			},
+		},
+	})
+	preexistingTransaction := f.transactionStorage.Get(transactionID.String())
+	if !(preexistingTransaction.Message == WATING_TX || preexistingTransaction.Message == "") {
+		return ReusedTransaction{
+			TransactionID: transactionID,
+			Status:        preexistingTransaction.Message,
+		}
+	}
+	f.transactionStorage.Save(StorageSaveStruct{
+		Key: transactionID.String(),
+		Value: StorageData{
+			Message: WATING_TX,
+		},
+	})
+	return nil
+}
+
+func (f Follower) rollback(ctx context.Context) error {
+	return f.changeTransactionStatus(ctx, ROLLBACKED_TX)
+}
+
+func (f Follower) commit(ctx context.Context) error {
+	return f.changeTransactionStatus(ctx, COMMITTED_TX)
+}
+
+func (f Follower) changeTransactionStatus(ctx context.Context, status string) error {
+	transactionID := TransactionIDFromCtx(ctx)
+	tx := f.transactionStorage.Get(transactionID.String())
+	if tx.Message == "" {
+		return NotFound{}
+	}
+
+	if tx.Message != WATING_TX {
+		return InternalError{}
+	}
+
+	f.transactionStorage.Save(StorageSaveStruct{
+		Key: transactionID.String(),
+		Value: StorageData{
+			Message: status,
+		},
+	})
+	return nil
 }
