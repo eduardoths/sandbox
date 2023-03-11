@@ -1,0 +1,7 @@
+package main
+
+const (
+	COMMITTED_TX  = "COMMITED"
+	ROLLBACKED_TX = "ROLLBACKED"
+	WATING_TX     = "WAITING"
+)

@@ -2,23 +2,33 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
+)
+
+const (
+	TX_ID_METADATA = "COMMITTED_AT"
+	LEADER_URL     = "LEADER_URL"
+	APP_JSON       = "application/json"
 )
 
 type Follower struct {
-	app     *fiber.App
-	storage *Storage
+	app                *fiber.App
+	kvStorage          *Storage
+	transactionStorage *Storage
 }
 
 func NewFollower() Follower {
 	app := fiber.New()
 	follower := Follower{
-		app:     app,
-		storage: NewStorage(),
+		app:                app,
+		kvStorage:          NewStorage(),
+		transactionStorage: NewStorage(),
 	}
 	follower.route()
 	return follower
@@ -30,7 +40,11 @@ func (f Follower) ServeHTTP(port string) error {
 
 func (f Follower) handleGet(c *fiber.Ctx) error {
 	key := c.Params("key")
-	return c.SendString(f.get(key))
+	val, err := f.get(c.UserContext(), key)
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+	return c.SendString(val)
 }
 
 func (f Follower) handleExternalSave(c *fiber.Ctx) error {
@@ -50,7 +64,7 @@ func (f Follower) handleExternalSave(c *fiber.Ctx) error {
 }
 
 func (f Follower) ExternalSave(key, value string) error {
-	leaderURL := os.Getenv("LEADER_URL")
+	leaderURL := os.Getenv(LEADER_URL)
 	body := SaveRequest{
 		Key:   key,
 		Value: value,
@@ -60,10 +74,25 @@ func (f Follower) ExternalSave(key, value string) error {
 		return err
 	}
 	reader := bytes.NewReader(b)
-	_, err = http.Post(leaderURL, "application/url", reader)
+	_, err = http.Post(leaderURL, APP_JSON, reader)
 	return err
 }
 
-func (f Follower) get(key string) string {
-	return f.storage.Get(key)
+func (f Follower) get(ctx context.Context, key string) (string, error) {
+	data := f.kvStorage.Get(key)
+	icommitID, ok := data.Metadata[TX_ID_METADATA]
+	if !ok {
+		return "", InternalError{}
+	}
+
+	commitID, ok := icommitID.(uuid.UUID)
+	if !ok {
+		return "", InternalError{}
+	}
+
+	txData := f.transactionStorage.Get(commitID.String())
+	if txData.Message != COMMITTED_TX {
+		return "", NotFound{}
+	}
+	return data.Message, nil
 }
