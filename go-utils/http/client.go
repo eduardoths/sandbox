@@ -9,12 +9,16 @@ import (
 type Client struct {
 	baseURL string
 
-	defaultHeaders map[string]string
+	defaultHeaders     map[string]string
+	validateStatusFunc func(statusCode int) bool
 }
 
 func NewClient(baseURL string) Client {
+	config := newConfig()
 	return Client{
-		baseURL: baseURL,
+		baseURL:            baseURL,
+		defaultHeaders:     config.defaultHeaders,
+		validateStatusFunc: config.validateStatusCodeFn,
 	}
 }
 
@@ -22,7 +26,7 @@ func (c Client) newRequest(ctx context.Context, method string, endpoint string, 
 	return &Request{
 		Endpoint:    endpoint,
 		Method:      method,
-		Headers:     make(map[string]string),
+		Headers:     c.defaultHeaders,
 		QueryParams: make(map[string]string),
 		Body:        body,
 		client:      c,

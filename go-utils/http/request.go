@@ -31,7 +31,7 @@ func (r *Request) Do() *Response {
 		}
 	}
 
-	return &Response{
+	response := &Response{
 		Body:       res.Body,
 		StatusCode: res.StatusCode,
 		Headers:    r.Headers,
@@ -40,6 +40,8 @@ func (r *Request) Do() *Response {
 		res:   res,
 		req:   r,
 	}
+	response.validate()
+	return response
 }
 
 func (r *Request) AddHeaders(keysAndValues ...string) *Request {
