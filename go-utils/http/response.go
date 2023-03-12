@@ -10,7 +10,7 @@ type Response struct {
 	StatusCode int
 	Headers    map[string]string
 
-	req Request
-	err error
-	res *http.Response
+	Error error
+	res   *http.Response
+	req   *Request
 }
