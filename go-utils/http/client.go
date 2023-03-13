@@ -7,18 +7,25 @@ import (
 )
 
 type Client struct {
-	baseURL string
+	baseURL    string
+	httpClient http.Client
 
 	defaultHeaders     map[string]string
 	validateStatusFunc func(statusCode int) bool
 }
 
-func NewClient(baseURL string) Client {
+func NewClient(baseURL string, opts ...Option) Client {
 	config := newConfig()
+	for _, opt := range opts {
+		opt(config)
+	}
 	return Client{
 		baseURL:            baseURL,
 		defaultHeaders:     config.defaultHeaders,
 		validateStatusFunc: config.validateStatusCodeFn,
+		httpClient: http.Client{
+			Timeout: config.timeout,
+		},
 	}
 }
 

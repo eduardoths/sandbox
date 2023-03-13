@@ -23,8 +23,7 @@ func (r *Request) Do() *Response {
 		}
 	}
 
-	httpClient := &http.Client{}
-	res, err := httpClient.Do(r.req)
+	res, err := r.client.httpClient.Do(r.req)
 	if err != nil {
 		return &Response{
 			Error: err,

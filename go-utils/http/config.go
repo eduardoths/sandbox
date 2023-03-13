@@ -1,7 +1,10 @@
 package http
 
+import "time"
+
 type config struct {
 	validateStatusCodeFn func(statusCode int) bool
+	timeout              time.Duration
 	defaultHeaders       map[string]string
 }
 
@@ -18,4 +21,5 @@ func (c *config) defaults() {
 	c.defaultHeaders = map[string]string{
 		"Content-Type": "application/json",
 	}
+	c.timeout = time.Minute
 }
