@@ -37,7 +37,12 @@ func (p Pool[T]) Start(ctx context.Context, jobs []Job[T]) []T {
 
 	outputs := make([]T, 0, len(jobs))
 	for i := 0; i < len(jobs); i++ {
-		outputs = append(outputs, <-p.outputChan)
+		select {
+		case output := <-p.outputChan:
+			outputs = append(outputs, output)
+		case <-ctx.Done():
+			break
+		}
 	}
 	return outputs
 }
