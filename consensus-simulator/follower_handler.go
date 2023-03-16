@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 
+	"github.com/eduardoths/sandbox/consensus-simulator/internal/utils/transaction"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -11,7 +12,9 @@ func (f Follower) ServeHTTP(port string) error {
 }
 
 func (f *Follower) route() {
-	route := f.app.Use(SetTransactionIDToContext)
+	route := f.app.Use(transaction.SetToFiber,
+		LogMiddleware,
+	)
 	route.Route("/api/storage", func(router fiber.Router) {
 		router.Get("", f.handleGet)
 		router.Post("", f.handleExternalSave)
@@ -20,7 +23,7 @@ func (f *Follower) route() {
 	route.Route("/internal-api/storage", func(router fiber.Router) {
 		route.Post("", f.handleInternalSave)
 		route.Put("rollback", f.handleRollback)
-		route.Post("commit", f.handleCommit)
+		route.Put("commit", f.handleCommit)
 	})
 }
 
@@ -52,7 +55,7 @@ func (f Follower) handleExternalSave(c *fiber.Ctx) error {
 func (f Follower) handleInternalSave(c *fiber.Ctx) error {
 	var body WSRequest
 	ctx := c.UserContext()
-	txID := TransactionIDFromCtx(ctx)
+	txID := transaction.GetFromCtx(ctx)
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(http.StatusUnprocessableEntity).JSON(Response{
 			Error: []ErrorResponse{

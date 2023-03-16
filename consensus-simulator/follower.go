@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/eduardoths/sandbox/consensus-simulator/internal/utils/transaction"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 )
@@ -69,7 +70,7 @@ func (f Follower) Get(ctx context.Context, key string) (string, error) {
 }
 
 func (f Follower) save(ctx context.Context, key, value string) error {
-	transactionID := TransactionIDFromCtx(ctx)
+	transactionID := transaction.GetFromCtx(ctx)
 	f.kvStorage.Save(StorageSaveStruct{
 		Key: key,
 		Value: StorageData{
@@ -104,7 +105,7 @@ func (f Follower) commit(ctx context.Context) error {
 }
 
 func (f Follower) changeTransactionStatus(ctx context.Context, status string) error {
-	transactionID := TransactionIDFromCtx(ctx)
+	transactionID := transaction.GetFromCtx(ctx)
 	tx := f.transactionStorage.Get(transactionID.String())
 	if tx.Message == "" {
 		return NotFound{}
