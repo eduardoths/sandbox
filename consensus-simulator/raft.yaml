@@ -1,4 +1,4 @@
-s.ervers:
+servers:
   leader: localhost:8080
   followers:
     - localhost:8081
