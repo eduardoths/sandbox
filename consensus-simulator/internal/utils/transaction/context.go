@@ -9,7 +9,7 @@ import (
 
 type transactionCtxKey struct{}
 
-const TRANSACTION_ID_HEADER = "Transaction-ID"
+const TRANSACTION_ID_HEADER = "Transaction-Id"
 
 func SetToCtx(ctx context.Context, transactionID uuid.UUID) context.Context {
 	return context.WithValue(ctx, transactionCtxKey{}, transactionID)

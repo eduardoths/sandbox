@@ -1,21 +1,35 @@
 package main
 
-import "fmt"
+import (
+	"os"
+	"strings"
+)
 
 func main() {
-	storage := NewStorage()
-	storage.Save(StorageSaveStruct{
-		Key: "key1",
-		Value: StorageData{
-			Message: "value1",
-		},
-	})
-	storage.Save(StorageSaveStruct{
-		Key: "key2",
-		Value: StorageData{
-			Message: "value2",
-		},
-	})
-	fmt.Println(storage.Get("key1"))
-	storage.Shutdown()
+	args := os.Args
+	serverType := args[1]
+	port := args[2]
+
+	if strings.ToLower(serverType) == "follower" {
+		newFollower(port)
+	}
+
+	if strings.ToLower(serverType) == "leader" {
+		newLeader(port)
+	}
+
+}
+
+func newFollower(port string) {
+	f := NewFollower()
+	if err := f.ServeHTTP(port); err != nil {
+		panic(err)
+	}
+}
+
+func newLeader(port string) {
+	l := NewLeader()
+	if err := l.ServeHTTP(port); err != nil {
+		panic(err)
+	}
 }

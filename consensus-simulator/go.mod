@@ -2,9 +2,17 @@ module github.com/eduardoths/sandbox/consensus-simulator
 
 go 1.19
 
+replace (
+	github.com/eduardoths/sandbox/go-utils/http => ../go-utils/http
+	github.com/eduardoths/sandbox/go-utils/worker-pool => ../go-utils/worker-pool
+)
+
 require (
+	github.com/eduardoths/sandbox/go-utils/http v0.0.0-20230313222343-01c5b0975626
+	github.com/eduardoths/sandbox/go-utils/worker-pool v0.0.0-20230315155155-714cd518e5d6
 	github.com/gofiber/fiber/v2 v2.42.0
 	github.com/google/uuid v1.3.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (

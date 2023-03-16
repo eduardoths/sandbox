@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -64,6 +65,7 @@ func (f Follower) Get(ctx context.Context, key string) (string, error) {
 
 	txData := f.transactionStorage.Get(commitID.String())
 	if txData.Message != COMMITTED_TX {
+		fmt.Println(txData)
 		return "", NotFound{}
 	}
 	return data.Message, nil

@@ -1,5 +1,5 @@
 servers:
   leader: localhost:8080
   followers:
-    - localhost:8081
-    - localhost:8082
+    - http://localhost:8081
+    - http://localhost:8082

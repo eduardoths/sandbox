@@ -18,17 +18,17 @@ func (f *Follower) route() {
 	route.Route("/api/storage", func(router fiber.Router) {
 		router.Get("", f.handleGet)
 		router.Post("", f.handleExternalSave)
-	})
+	}, "api")
 
 	route.Route("/internal-api/storage", func(router fiber.Router) {
-		route.Post("", f.handleInternalSave)
-		route.Put("rollback", f.handleRollback)
-		route.Put("commit", f.handleCommit)
+		router.Post("", f.handleInternalSave)
+		router.Put("rollback", f.handleRollback)
+		router.Put("commit", f.handleCommit)
 	})
 }
 
 func (f Follower) handleGet(c *fiber.Ctx) error {
-	key := c.Params("key")
+	key := c.Query("key", "")
 	val, err := f.Get(c.UserContext(), key)
 	if err != nil {
 		return c.SendStatus(http.StatusInternalServerError)

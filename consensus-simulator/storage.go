@@ -1,5 +1,7 @@
 package main
 
+import "fmt"
+
 type Storage struct {
 	memory           map[string]StorageData
 	finishChan       chan struct{}
@@ -49,6 +51,7 @@ func (s *Storage) start() {
 }
 
 func (s *Storage) Save(sss StorageSaveStruct) {
+	fmt.Println("saving", sss)
 	s.saveChan <- sss
 }
 
