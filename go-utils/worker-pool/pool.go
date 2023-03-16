@@ -2,7 +2,6 @@ package workerpool
 
 import (
 	"context"
-	"fmt"
 )
 
 type Pool[T any] struct {
@@ -61,12 +60,10 @@ func (w worker[T]) start(ctx context.Context) {
 		select {
 		case job, ok := <-w.jobs:
 			if !ok {
-				fmt.Println("worker finished")
 				return
 			}
 			w.out <- job.Do()
 		case <-ctx.Done():
-			fmt.Println("worker finished because context was canceled")
 			return
 		}
 	}
