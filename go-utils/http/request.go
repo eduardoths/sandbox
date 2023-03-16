@@ -3,9 +3,11 @@ package http
 import (
 	"io"
 	"net/http"
+	"net/url"
 )
 
 type Request struct {
+	BaseURL     string
 	Endpoint    string
 	Method      string
 	Headers     map[string]string
@@ -62,7 +64,11 @@ func (r *Request) AddQueryParams(keysAndValues ...string) *Request {
 }
 
 func (r *Request) beforeRequest() error {
-	httpReq, err := http.NewRequest(r.Method, r.Endpoint, r.Body)
+	url, err := url.JoinPath(r.BaseURL, r.Endpoint)
+	if err != nil {
+		return err
+	}
+	httpReq, err := http.NewRequest(r.Method, url, r.Body)
 	if err != nil {
 		return err
 	}

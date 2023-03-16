@@ -31,6 +31,7 @@ func NewClient(baseURL string, opts ...Option) Client {
 
 func (c Client) newRequest(ctx context.Context, method string, endpoint string, body io.Reader) *Request {
 	return &Request{
+		BaseURL:     c.baseURL,
 		Endpoint:    endpoint,
 		Method:      method,
 		Headers:     c.defaultHeaders,
